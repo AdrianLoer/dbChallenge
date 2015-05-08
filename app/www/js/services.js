@@ -33,6 +33,8 @@ angular.module('starter.services', [])
   var currentPositionSource;
   var currentPositionLayer;
   var map;
+  var oldPosition
+
 
   function init() {
 
@@ -105,8 +107,14 @@ angular.module('starter.services', [])
 
     map = new ol.Map({
       layers: [
+        // new ol.layer.Tile({
+        //   source: new ol.source.OSM()
+        // }),
         new ol.layer.Tile({
-          source: new ol.source.OSM()
+          source: new ol.source.BingMaps({
+            key: 'Ak-dzM4wZjSqTlzveKz5u0d4IQ4bRzVI309GxmkgSVr1ewS6iPSrOvOKhA-CJlm3',
+            imagerySet: 'Aerial'
+          })
         }),
         vector,
         pointLayer,
@@ -126,6 +134,8 @@ angular.module('starter.services', [])
       })
     });
 
+    oldPosition = ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857');
+
     window.coordinates = [];
 
     map.on("click", function(event) {
@@ -140,7 +150,16 @@ angular.module('starter.services', [])
 
 
   function translateCurrentPosition(newCoordinates) {
+    var deltaX = oldPosition[0] - newCoordinates[0];
+    var deltaY = oldPosition[1] - newCoordinates[1];
+
+    console.log(deltaX);
+    console.log(deltaY);
+    var angle = Math.atan2(deltaY, deltaX);
+    map.getView().setRotation(angle + Math.PI / 2);
+    console.log("angle " + angle * 180 / Math.PI); 
     // console.log(currentPositionSource.getFeatures());
+    oldPosition = newCoordinates;
     currentPositionSource.clear();
 
     currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), 100)));
