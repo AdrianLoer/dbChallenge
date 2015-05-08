@@ -1,6 +1,11 @@
 angular.module('starter.controllers', [])
 
-.controller('MainCtrl', function($scope, MapService) {
+.controller('MainCtrl', function($scope, MapService, GPSService) {
+	$scope.startGPS = function() {
+		console.log("controller start");
+		GPSService.start();
+	}
+
 	MapService.init();
 })
 

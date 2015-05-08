@@ -1,6 +1,30 @@
 angular.module('starter.services', [])
 
-.factory('GPSService', function() {
+.factory('GPSService', function($http, MapService) {
+
+  var gpsTrackData;
+
+  function start() {
+
+    console.log("service start");
+
+      var counter = 0;
+      $http.get('data/gps_track.json').success(function(data) {
+      console.log(data);
+      gpsTrackData = data;
+
+      setInterval(function() {
+        console.log(gpsTrackData.features[counter++].geometry.coordinates);
+        MapService.updatePosition(gpsTrackData.features[counter++].geometry.coordinates)
+      }, 1000);
+    });
+
+
+  }
+
+  return {
+    start: start
+  }
 
 })
 
@@ -8,8 +32,10 @@ angular.module('starter.services', [])
 
   var currentPositionSource;
   var currentPositionLayer;
+  var map;
 
   function init() {
+
 
     currentPositionSource = new ol.source.Vector({
 
@@ -43,21 +69,49 @@ angular.module('starter.services', [])
       })
     });
 
-    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform([8.22297990218418,48.8648350817261], 'EPSG:4326', 'EPSG:3857'), 100)));
+    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'), 100)));
     // vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
 
     var mouseControl = new ol.control.MousePosition({
         projection: 'EPSG:4326'
     });
 
-    var map = new ol.Map({
+        var white = [255, 255, 255, 1];
+    var blue = [0, 153, 255, 1];
+    var red = [255, 0, 0, 1];
+    var width = 3;
+
+    var coordinates = new ol.layer.Vector({
+      source: new ol.source.Vector({
+        url: 'data/coordinates.json',
+        format: new ol.format.GeoJSON(),
+        // projection: 'EPSG:31467',
+        wrapX: false
+      }),
+      style: new ol.style.Style({
+         image: new ol.style.Circle({
+           radius: width * 2,
+           fill: new ol.style.Fill({
+             color: blue
+           }),
+           stroke: new ol.style.Stroke({
+             color: white,
+             width: width / 2
+           })
+         }),
+         zIndex: Infinity
+       })
+    });
+
+    map = new ol.Map({
       layers: [
         new ol.layer.Tile({
           source: new ol.source.OSM()
         }),
         vector,
         pointLayer,
-        currentPositionLayer
+        currentPositionLayer,
+        coordinates
       ],
       target: 'map',
       controls: ol.control.defaults({
@@ -67,21 +121,30 @@ angular.module('starter.services', [])
       }),
       controls: [mouseControl],
       view: new ol.View({
-        center: ol.proj.transform([8.23009489802687,48.8713096877989], 'EPSG:4326', 'EPSG:3857'),
+        center: ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'),
         zoom: 15
       })
     });
 
+    window.coordinates = [];
+
     map.on("click", function(event) {
         console.log(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
-        // coordinates.push(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
+        window.coordinates.push(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
         pointSource.addFeature(new ol.Feature(new ol.geom.Circle(event.coordinate, 100)));
     })
+
+
+
   }
 
 
   function translateCurrentPosition(newCoordinates) {
-    currentPositionSource.getFeatures()[0].setCenter(newCoordinates);
+    // console.log(currentPositionSource.getFeatures());
+    currentPositionSource.clear();
+
+    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), 100)));
+    map.getView().setCenter(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), 100);
   }
 
   function updatePosition(newCoordinates) {
