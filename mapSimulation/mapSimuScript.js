@@ -39,6 +39,7 @@ var vector = new ol.layer.Vector({
 
 var white = [255, 255, 255, 1];
 var blue = [0, 153, 255, 1];
+var red = [255, 0, 0, 1];
 var width = 3;
 
 var coordinates = new ol.layer.Vector({
@@ -63,6 +64,28 @@ var coordinates = new ol.layer.Vector({
    })
 });
 
+var gps_track = new ol.layer.Vector({
+  source: new ol.source.Vector({
+    url: 'gps_track.json',
+    format: new ol.format.GeoJSON(),
+    // projection: 'EPSG:31467',
+    wrapX: false
+  }),
+  style: new ol.style.Style({
+     image: new ol.style.Circle({
+       radius: width * 2,
+       fill: new ol.style.Fill({
+         color: red
+       }),
+       stroke: new ol.style.Stroke({
+         color: white,
+         width: width / 2
+       })
+     }),
+     zIndex: Infinity
+   })
+});
+
 
 // vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
 
@@ -77,7 +100,8 @@ var map = new ol.Map({
     }),
     vector,
     coordinates,
-    pointLayer
+    pointLayer,
+    gps_track
   ],
   target: 'map',
   controls: ol.control.defaults({
