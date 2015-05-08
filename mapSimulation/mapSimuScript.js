@@ -37,6 +37,32 @@ var vector = new ol.layer.Vector({
   })
 });
 
+var white = [255, 255, 255, 1];
+var blue = [0, 153, 255, 1];
+var width = 3;
+
+var coordinates = new ol.layer.Vector({
+  source: new ol.source.Vector({
+    url: 'coordinates.json',
+    format: new ol.format.GeoJSON(),
+    // projection: 'EPSG:31467',
+    wrapX: false
+  }),
+  style: new ol.style.Style({
+     image: new ol.style.Circle({
+       radius: width * 2,
+       fill: new ol.style.Fill({
+         color: blue
+       }),
+       stroke: new ol.style.Stroke({
+         color: white,
+         width: width / 2
+       })
+     }),
+     zIndex: Infinity
+   })
+});
+
 
 // vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
 
@@ -50,6 +76,7 @@ var map = new ol.Map({
       source: new ol.source.OSM()
     }),
     vector,
+    coordinates,
     pointLayer
   ],
   target: 'map',
