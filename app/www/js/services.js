@@ -53,22 +53,6 @@ angular.module('starter.services', [])
       source: pointSource
     })
 
-
-    var vector = new ol.layer.Vector({
-      source: new ol.source.Vector({
-        url: 'data/streckeJson.json',
-        format: new ol.format.GeoJSON(),
-        // projection: 'EPSG:31467',
-        wrapX: false
-      }),
-      style: new ol.style.Style({
-        stroke: new ol.style.Stroke({
-          color: 'green',
-          width: 10
-        })
-      })
-    });
-
     currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'), 100)));
     // vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
 
@@ -103,12 +87,20 @@ angular.module('starter.services', [])
        })
     });
 
+    var gesamtstreckenStyle = new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'green',
+        width: 10
+      })
+    });
+    var gesamtstreckenVector = createWFSLayer('gesamtstrecken_3857', gesamtstreckenStyle);
+
     map = new ol.Map({
       layers: [
         new ol.layer.Tile({
           source: new ol.source.OSM()
         }),
-        vector,
+        gesamtstreckenVector,
         pointLayer,
         currentPositionLayer,
         coordinates
@@ -132,10 +124,33 @@ angular.module('starter.services', [])
         console.log(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
         window.coordinates.push(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
         pointSource.addFeature(new ol.Feature(new ol.geom.Circle(event.coordinate, 100)));
-    })
+    });
 
+  }
 
+  function createWFSLayer(tableName, style) {
+    var geojsonFormat = new ol.format.GeoJSON();
 
+    var vectorSource = new ol.source.Vector({
+      loader: function(extent, resolution, projection) {
+        var url = 'http://192.168.0.2:8080/geoserver/db_hack/wfs?service=WFS&' +
+            'version=1.0.0&request=GetFeature&typeName=db_hack:' + tableName + '&' +
+            'outputFormat=text/javascript&format_options=callback:loadFeatures_' + tableName + '&' +
+            'CQL_FILTER=strecke_nr%3D4020%20and%20BBOX(geometry%2C%20' + extent.join('%2C%20') + ')&' +
+            'srsname=EPSG:3857';
+        $.ajax({url: url, dataType: 'jsonp', jsonp: false});
+      },
+      strategy: ol.loadingstrategy.tile(new ol.tilegrid.XYZ({}))
+    });
+
+    window['loadFeatures_' + tableName] = function(response) {
+      vectorSource.addFeatures(geojsonFormat.readFeatures(response));
+    };
+
+    return new ol.layer.Vector({
+      source: vectorSource,
+      style: style
+    });
   }
 
 
