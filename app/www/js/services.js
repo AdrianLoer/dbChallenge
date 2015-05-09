@@ -68,22 +68,6 @@ angular.module('starter.services', [])
       source: pointSource
     })
 
-
-    var vector = new ol.layer.Vector({
-      source: new ol.source.Vector({
-        url: 'data/streckeJson.json',
-        format: new ol.format.GeoJSON(),
-        // projection: 'EPSG:31467',
-        wrapX: false
-      }),
-      style: new ol.style.Style({
-        stroke: new ol.style.Stroke({
-          color: 'green',
-          width: 10
-        })
-      })
-    });
-
     currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'), 100)));
     // vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
 
@@ -91,7 +75,7 @@ angular.module('starter.services', [])
         projection: 'EPSG:4326'
     });
 
-        var white = [255, 255, 255, 1];
+    var white = [255, 255, 255, 1];
     var blue = [0, 153, 255, 1];
     var red = [255, 0, 0, 1];
     var width = 3;
@@ -118,6 +102,56 @@ angular.module('starter.services', [])
        })
     });
 
+    var gesamtstreckenStyle = new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'green',
+        width: 10
+      })
+    });
+    var gesamtstreckenVector = createWFSLayer('gesamtstrecken_3857', gesamtstreckenStyle, ['strecke_nr%3D4020%20']);
+
+    var attractionsStyle = new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'red',
+        width: 20
+      })
+    });
+    var attractionsVector = createWFSLayer('attractions_attached_segments', attractionsStyle, ['strecke_nr%3D4020%20']);
+
+    var attractionsPtStyle = new ol.style.Style({
+         image: new ol.style.Circle({
+           radius: width * 2,
+           fill: new ol.style.Fill({
+             color: 'orange'
+           }),
+           stroke: new ol.style.Stroke({
+             color: white,
+             width: width / 2
+           })
+         }),
+         zIndex: Infinity
+       });
+    var attractionsPtVector = createWFSLayer('attractions_point_pm', attractionsPtStyle);
+
+
+    // var saveStrategy = new OpenLayers.Strategy.Save();
+
+    // var wfs = new OpenLayers.Layer.Vector("Editable Features", {
+    //     strategies: [new OpenLayers.Strategy.BBOX(), saveStrategy],
+    //     projection: new OpenLayers.Projection("EPSG:4326"),
+    //     protocol: new OpenLayers.Protocol.WFS({
+    //         version: "1.1.0",
+    //         srsName: "EPSG:4326",
+    //         url: "http://demo.boundlessgeo.com/geoserver/wfs",
+    //         featureNS :  "http://opengeo.org",
+    //         featureType: "restricted",
+    //         geometryName: "the_geom",
+    //         schema: "http://demo.boundlessgeo.com/geoserver/wfs/DescribeFeatureType?version=1.1.0&typename=og:restricted"
+    //     })
+    // });
+
+
+
     map = new ol.Map({
       layers: [
         // new ol.layer.Tile({
@@ -129,10 +163,13 @@ angular.module('starter.services', [])
             imagerySet: 'Aerial'
           })
         }),
-        vector,
+        gesamtstreckenVector,
         pointLayer,
         currentPositionLayer,
-        coordinates
+        coordinates,
+        attractionsVector,
+        attractionsPtVector
+        // wfs
       ],
       target: 'map',
       controls: ol.control.defaults({
@@ -156,10 +193,38 @@ angular.module('starter.services', [])
         console.log(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
         window.coordinates.push(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
         pointSource.addFeature(new ol.Feature(new ol.geom.Circle(event.coordinate, 100)));
-    })
+    });
 
+  }
 
+  function createWFSLayer(tableName, style, cqlQueries) {
+    var geojsonFormat = new ol.format.GeoJSON();
 
+    cqlQueries = cqlQueries || [];
+
+    var vectorSource = new ol.source.Vector({
+      loader: function(extent, resolution, projection) {
+        console.log( cqlQueries.concat(['BBOX(geometry%2C%20' + extent.join('%2C%20') + ')']));
+        var cql = cqlQueries.concat(['BBOX(geometry%2C%20' + extent.join('%2C%20') + ')']).join('%20and%20');
+        console.log(cql);
+        var url = 'http://192.168.0.2:8080/geoserver/db_hack/wfs?service=WFS&' +
+            'version=1.0.0&request=GetFeature&typeName=db_hack:' + tableName + '&' +
+            'outputFormat=text/javascript&format_options=callback:loadFeatures_' + tableName + '&' +
+            'CQL_FILTER=' + cql + '&' +
+            'srsname=EPSG:3857';
+        $.ajax({url: url, dataType: 'jsonp', jsonp: false});
+      },
+      strategy: ol.loadingstrategy.bbox
+    });
+
+    window['loadFeatures_' + tableName] = function(response) {
+      vectorSource.addFeatures(geojsonFormat.readFeatures(response));
+    };
+
+    return new ol.layer.Vector({
+      source: vectorSource,
+      style: style
+    });
   }
 
 
@@ -171,7 +236,7 @@ angular.module('starter.services', [])
     console.log(deltaY);
     var angle = Math.atan2(deltaY, deltaX);
     map.getView().setRotation(angle + Math.PI / 2);
-    console.log("angle " + angle * 180 / Math.PI); 
+    console.log("angle " + angle * 180 / Math.PI);
     // console.log(currentPositionSource.getFeatures());
     oldPosition = newCoordinates;
     currentPositionSource.clear();
