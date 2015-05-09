@@ -206,25 +206,6 @@ angular.module('starter.services', [])
       style: attractionsPtStyle
     })
 
-
-    // var saveStrategy = new OpenLayers.Strategy.Save();
-
-    // var wfs = new OpenLayers.Layer.Vector("Editable Features", {
-    //     strategies: [new OpenLayers.Strategy.BBOX(), saveStrategy],
-    //     projection: new OpenLayers.Projection("EPSG:4326"),
-    //     protocol: new OpenLayers.Protocol.WFS({
-    //         version: "1.1.0",
-    //         srsName: "EPSG:4326",
-    //         url: "http://demo.boundlessgeo.com/geoserver/wfs",
-    //         featureNS :  "http://opengeo.org",
-    //         featureType: "restricted",
-    //         geometryName: "the_geom",
-    //         schema: "http://demo.boundlessgeo.com/geoserver/wfs/DescribeFeatureType?version=1.1.0&typename=og:restricted"
-    //     })
-    // });
-
-
-
     map = new ol.Map({
       layers: [
         // new ol.layer.Tile({
@@ -275,36 +256,37 @@ angular.module('starter.services', [])
   }
 
   function createWFSLayer(tableName, style, cqlQueries) {
-    var geojsonFormat = new ol.format.GeoJSON();
+    var wfsFormat = new ol.format.WFS();
 
     cqlQueries = cqlQueries || [];
 
     var vectorSource = new ol.source.Vector({
+      format: new ol.format.WFS({
+        featureNS: 'http://disy.net',
+        featureType: tableName
+      }),
       loader: function(extent, resolution, projection) {
-        console.log( cqlQueries.concat(['BBOX(geometry%2C%20' + extent.join('%2C%20') + ')']));
         var cql = cqlQueries.concat(['BBOX(geometry%2C%20' + extent.join('%2C%20') + ')']).join('%20and%20');
-        console.log(cql);
-        var url = 'http://192.168.0.2:8080/geoserver/db_hack/wfs?service=WFS&' +
-            'version=1.0.0&request=GetFeature&typeName=db_hack:' + tableName + '&' +
-            'outputFormat=text/javascript&format_options=callback:loadFeatures_' + tableName + '&' +
-            'CQL_FILTER=' + cql + '&' +
-            'srsname=EPSG:3857';
-        $.ajax({url: url, dataType: 'jsonp', jsonp: false});
+        var url = 'http://192.168.0.2:8080/geoserver/db_hack/wfs?'+
+          'service=WFS&request=GetFeature&'+
+          'version=1.1.0&typeName=db_hack:' + tableName + '&' +
+          'srsname=EPSG:3857&CQL_FILTER=' + cql;
+        $.ajax({
+          url: url
+        })
+        .done(function(response) {
+          vectorSource.addFeatures(wfsFormat.readFeatures(response));
+        });
       },
-      strategy: ol.loadingstrategy.bbox
+      strategy: ol.loadingstrategy.bbox,
+      projection: 'EPSG:3857'
     });
-
-    window['loadFeatures_' + tableName] = function(response) {
-      console.log(response);
-      vectorSource.addFeatures(geojsonFormat.readFeatures(response));
-    };
 
     return new ol.layer.Vector({
-      source: vectorSource,
-      style: style
+        source: vectorSource,
+        style: style
     });
   }
-
 
   function translateCurrentPosition(newCoordinates) {
     var deltaX = oldPosition[0] - newCoordinates[0];
