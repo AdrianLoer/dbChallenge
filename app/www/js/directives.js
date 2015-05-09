@@ -1,6 +1,6 @@
 angular.module('directives', [])
 
-.directive("dbTimeline", function(CardService) {
+.directive("dbTimeline", function(CardService, ShareService, $rootScope, $ionicScrollDelegate) {
   return {
     restrict: 'E',
     // template: "<div class='db-timeline'></div>",
@@ -9,19 +9,31 @@ angular.module('directives', [])
       console.log("dbTimeline directive loaded");
       var numberOfElements = 0;
 
-      scope.$watch("infoCards", function(val) {
+      // scope.$watch("infoCards", function(val) {
+        $rootScope.$on("cardUpdated", function() {
         // $(".db-timeline").append("<div class='db-timeline-element'>" + val + "</div>");
-        console.log("watch triggered");
-        numberOfElements++;
-        newElementValue = val;
-        appendElement(newElementValue);
-      }, true)
+          console.log("cardUpdated");
+          numberOfElements++;
+          newElementValue = ShareService.getMessage();
+          appendElement(newElementValue);
+        })
+      // }, true)
 
       $(".infoview-content").css("height", (window.innerHeight * 0.4));
 
       function appendElement(newElementValue) {
         $(".infoview-content").css("width", (window.innerWidth * numberOfElements) + "px");
-        $(".infoview-content").append("<div class='infoview-element'>" + newElementValue + "</div>");
+        var newInfoElement = $("<div class='infoview-element'><div class='inner-ele'><p class='inner-ele-title'>" + newElementValue.values_.name + "</div></div></div>");
+        $(".infoview-content").append(newInfoElement);
+        newInfoElement.velocity({
+          opacity: 1
+        }, {
+          duration: 500
+        })
+        console.log(newInfoElement);
+        $(".infoview-element").css("width", window.innerWidth);
+        $ionicScrollDelegate.$getByHandle('infoViewScroller').resize();
+        $ionicScrollDelegate.$getByHandle('infoViewScroller').scrollBy(window.innerWidth, 0, true);
       }
 
     }

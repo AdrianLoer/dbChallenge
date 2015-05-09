@@ -1,5 +1,18 @@
 angular.module('starter.services', [])
 
+.factory('ShareService', function() {
+  var message;
+
+  return {
+    setMessage: function(msg) {
+      message = msg;
+    },
+    getMessage: function() {
+      return message;
+    }
+  }
+})
+
 .factory('CardService', function() {
   var infoCards = [];
 
@@ -55,7 +68,7 @@ angular.module('starter.services', [])
 
 })
 
-.factory('MapService', function($rootScope) {
+.factory('MapService', function($rootScope, ShareService) {
 
   var currentPositionSource;
   var currentPositionLayer;
@@ -88,6 +101,7 @@ angular.module('starter.services', [])
     currentPositionSource = new ol.source.Vector({
 
     })
+
 
     currentPositionLayer = new ol.layer.Vector({
       source: currentPositionSource
@@ -137,7 +151,7 @@ angular.module('starter.services', [])
 
     var gesamtstreckenStyle = new ol.style.Style({
       stroke: new ol.style.Stroke({
-        color: 'green',
+        color: 'rgba(113, 12, 81, 0.4)',
         width: 10
       })
     });
@@ -237,16 +251,16 @@ angular.module('starter.services', [])
           collapsible: false
         })
       }),
-      // interactions: [],
+      interactions: [],
       controls: [mouseControl],
       view: new ol.View({
         // center: ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'),
         center: ol.proj.transform([8.45370788902995,49.026232005884], 'EPSG:4326', 'EPSG:3857'),
-        zoom: 15
+        zoom: 12
       })
     });
 
-    attractionsPtVector.setOpacity(1);
+    attractionsPtVector.setOpacity(0);
     // oldPosition = ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857');
     oldPosition = ol.proj.transform([8.45370788902995,49.026232005884], 'EPSG:4326', 'EPSG:3857');
 
@@ -305,8 +319,8 @@ angular.module('starter.services', [])
     oldPosition = newCoordinates;
     currentPositionSource.clear();
 
-    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), 100)));
-    map.getView().setCenter(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), 100);
+    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), 300)));
+    map.getView().setCenter(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'));
   }
 
   function updatePosition(newCoordinates) {
@@ -342,9 +356,10 @@ angular.module('starter.services', [])
           if (pointFeatures[j].values_.gid === p_id.values_.p_id) {
             if (!pointCtrlObj[p_id.values_.p_id]) {
               pointCtrlObj[p_id.values_.p_id] = true;
-            } else {
-              console.log("found");
+              console.log(pointFeatures[j]);
+              ShareService.setMessage(pointFeatures[j]);
               yellowDotsToRedLinesSource.addFeature(pointFeatures[j]);
+              $rootScope.$broadcast("cardUpdated");
             }
           }
         }

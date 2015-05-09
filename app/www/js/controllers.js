@@ -33,7 +33,10 @@ angular.module('starter.controllers', [])
 
 	var started = false;
 
+
 	$scope.start = function() {
+
+		$(".map-play-icon").hide();
 		if(started) {
 			GPSService.stop();
 		} else {
