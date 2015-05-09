@@ -95,7 +95,49 @@ angular.module('starter.services', [])
         width: 10
       })
     });
-    var gesamtstreckenVector = createWFSLayer('gesamtstrecken_3857', gesamtstreckenStyle);
+    var gesamtstreckenVector = createWFSLayer('gesamtstrecken_3857', gesamtstreckenStyle, ['strecke_nr%3D4020%20']);
+
+    var attractionsStyle = new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'red',
+        width: 20
+      })
+    });
+    var attractionsVector = createWFSLayer('attractions_attached_segments', attractionsStyle, ['strecke_nr%3D4020%20']);
+
+    var attractionsPtStyle = new ol.style.Style({
+         image: new ol.style.Circle({
+           radius: width * 2,
+           fill: new ol.style.Fill({
+             color: 'orange'
+           }),
+           stroke: new ol.style.Stroke({
+             color: white,
+             width: width / 2
+           })
+         }),
+         zIndex: Infinity
+       });
+    var attractionsPtVector = createWFSLayer('attractions_point_pm', attractionsPtStyle);
+
+
+    // var saveStrategy = new OpenLayers.Strategy.Save();
+
+    // var wfs = new OpenLayers.Layer.Vector("Editable Features", {
+    //     strategies: [new OpenLayers.Strategy.BBOX(), saveStrategy],
+    //     projection: new OpenLayers.Projection("EPSG:4326"),
+    //     protocol: new OpenLayers.Protocol.WFS({
+    //         version: "1.1.0",
+    //         srsName: "EPSG:4326",
+    //         url: "http://demo.boundlessgeo.com/geoserver/wfs",
+    //         featureNS :  "http://opengeo.org",
+    //         featureType: "restricted",
+    //         geometryName: "the_geom",
+    //         schema: "http://demo.boundlessgeo.com/geoserver/wfs/DescribeFeatureType?version=1.1.0&typename=og:restricted"
+    //     })
+    // });
+
+
 
     map = new ol.Map({
       layers: [
@@ -111,7 +153,10 @@ angular.module('starter.services', [])
         gesamtstreckenVector,
         pointLayer,
         currentPositionLayer,
-        coordinates
+        coordinates,
+        attractionsVector,
+        attractionsPtVector
+        // wfs
       ],
       target: 'map',
       controls: ol.control.defaults({
@@ -138,16 +183,20 @@ angular.module('starter.services', [])
 
   }
 
-  function createWFSLayer(tableName, style) {
+  function createWFSLayer(tableName, style, cqlQueries) {
     var geojsonFormat = new ol.format.GeoJSON();
+
+    cqlQueries = cqlQueries || [];
 
     var vectorSource = new ol.source.Vector({
       loader: function(extent, resolution, projection) {
-        console.log(extent);
+        console.log( cqlQueries.concat(['BBOX(geometry%2C%20' + extent.join('%2C%20') + ')']));
+        var cql = cqlQueries.concat(['BBOX(geometry%2C%20' + extent.join('%2C%20') + ')']).join('%20and%20');
+        console.log(cql);
         var url = 'http://192.168.0.2:8080/geoserver/db_hack/wfs?service=WFS&' +
             'version=1.0.0&request=GetFeature&typeName=db_hack:' + tableName + '&' +
             'outputFormat=text/javascript&format_options=callback:loadFeatures_' + tableName + '&' +
-            'CQL_FILTER=strecke_nr%3D4020%20and%20BBOX(geometry%2C%20' + extent.join('%2C%20') + ')&' +
+            'CQL_FILTER=' + cql + '&' +
             'srsname=EPSG:3857';
         $.ajax({url: url, dataType: 'jsonp', jsonp: false});
       },
