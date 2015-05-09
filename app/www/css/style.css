@@ -118,3 +118,7 @@
 .ol-mouse-position {
 	display: none;
 }
+
+.ion-chevron-right {
+	float: right;
+}
