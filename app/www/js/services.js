@@ -29,7 +29,7 @@ angular.module('starter.services', [])
       setInterval(function() {
         console.log(gpsTrackData.features[counter++].geometry.coordinates);
         MapService.updatePosition(gpsTrackData.features[counter++].geometry.coordinates)
-      }, 1000);
+      }, 300);
     });
 
 
@@ -46,7 +46,8 @@ angular.module('starter.services', [])
   var currentPositionSource;
   var currentPositionLayer;
   var map;
-  var oldPosition
+  var oldPosition;
+  var attractionsVector;
 
 
   function init() {
@@ -80,27 +81,27 @@ angular.module('starter.services', [])
     var red = [255, 0, 0, 1];
     var width = 3;
 
-    var coordinates = new ol.layer.Vector({
-      source: new ol.source.Vector({
-        url: 'data/coordinates.json',
-        format: new ol.format.GeoJSON(),
-        // projection: 'EPSG:31467',
-        wrapX: false
-      }),
-      style: new ol.style.Style({
-         image: new ol.style.Circle({
-           radius: width * 2,
-           fill: new ol.style.Fill({
-             color: blue
-           }),
-           stroke: new ol.style.Stroke({
-             color: white,
-             width: width / 2
-           })
-         }),
-         zIndex: Infinity
-       })
-    });
+    // var coordinates = new ol.layer.Vector({
+    //   source: new ol.source.Vector({
+    //     url: 'data/coordinates.json',
+    //     format: new ol.format.GeoJSON(),
+    //     // projection: 'EPSG:31467',
+    //     wrapX: false
+    //   }),
+    //   style: new ol.style.Style({
+    //      image: new ol.style.Circle({
+    //        radius: width * 2,
+    //        fill: new ol.style.Fill({
+    //          color: blue
+    //        }),
+    //        stroke: new ol.style.Stroke({
+    //          color: white,
+    //          width: width / 2
+    //        })
+    //      }),
+    //      zIndex: Infinity
+    //    })
+    // });
 
     var gesamtstreckenStyle = new ol.style.Style({
       stroke: new ol.style.Stroke({
@@ -116,7 +117,8 @@ angular.module('starter.services', [])
         width: 20
       })
     });
-    var attractionsVector = createWFSLayer('attractions_attached_segments', attractionsStyle, ['strecke_nr%3D4020%20']);
+    attractionsVector = createWFSLayer('attractions_attached_segments', attractionsStyle, ['strecke_nr%3D4020%20']);
+
 
     var attractionsPtStyle = new ol.style.Style({
          image: new ol.style.Circle({
@@ -166,7 +168,7 @@ angular.module('starter.services', [])
         gesamtstreckenVector,
         pointLayer,
         currentPositionLayer,
-        coordinates,
+        // coordinates,
         attractionsVector,
         attractionsPtVector
         // wfs
@@ -177,7 +179,7 @@ angular.module('starter.services', [])
           collapsible: false
         })
       }),
-      interactions: [],
+      // interactions: [],
       controls: [mouseControl],
       view: new ol.View({
         center: ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'),
@@ -190,9 +192,9 @@ angular.module('starter.services', [])
     window.coordinates = [];
 
     map.on("click", function(event) {
-        console.log(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
-        window.coordinates.push(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
-        pointSource.addFeature(new ol.Feature(new ol.geom.Circle(event.coordinate, 100)));
+        // console.log(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
+        // // window.coordinates.push(ol.proj.transform(event.coordinate, 'EPSG:3857', 'EPSG:4326'));
+        // pointSource.addFeature(new ol.Feature(new ol.geom.Circle(event.coordinate, 100)));
     });
 
   }
@@ -218,6 +220,7 @@ angular.module('starter.services', [])
     });
 
     window['loadFeatures_' + tableName] = function(response) {
+      console.log(response);
       vectorSource.addFeatures(geojsonFormat.readFeatures(response));
     };
 
@@ -247,6 +250,8 @@ angular.module('starter.services', [])
 
   function updatePosition(newCoordinates) {
     translateCurrentPosition(newCoordinates);
+    console.log(attractionsVector.getSource().getFeatures());
+
     // TODO: calculate
   }
 
