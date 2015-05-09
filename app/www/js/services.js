@@ -13,11 +13,14 @@ angular.module('starter.services', [])
   }
 })
 
-.factory('GPSService', function($http, MapService) {
+.factory('GPSService', function($http, MapService, $rootScope) {
 
   var gpsTrackData;
+  var interval;
 
   function start() {
+
+    $rootScope.$broadcast("createPidObject");
 
     console.log("service start");
 
@@ -26,28 +29,57 @@ angular.module('starter.services', [])
       console.log(data);
       gpsTrackData = data;
 
-      setInterval(function() {
-        console.log(gpsTrackData.features[counter++].geometry.coordinates);
-        MapService.updatePosition(gpsTrackData.features[counter++].geometry.coordinates)
-      }, 300);
+      interval = setInterval(function() {
+        // console.log(gpsTrackData.features[counter++].geometry.coordinates);
+        if (gpsTrackData.features[counter] !== undefined) {
+          MapService.updatePosition(gpsTrackData.features[counter++].geometry.coordinates)
+        }
+      }, 100);
     });
 
 
   }
 
+  $rootScope.$on("GPSServicestop", function() {
+    clearInterval(interval);
+  })
+
+  function stop() {
+    clearInterval(interval);
+  }
+
   return {
-    start: start
+    start: start,
+    stop: stop
   }
 
 })
 
-.factory('MapService', function() {
+.factory('MapService', function($rootScope) {
 
   var currentPositionSource;
   var currentPositionLayer;
   var map;
   var oldPosition;
   var attractionsVector;
+  var gesamtstreckenVector;
+  var attractionsPtVector;
+  var attractionsPtVectorObject = {};
+
+  var yellowDotsToRedLinesSource;
+  var yellowDotsToRedLinesLayer
+
+  // $rootScope.$on("createPidObject", function() {
+  //   console.log("broadcast");
+  //   var attractionsPtVectorFeatures = attractionsPtVector.getSource().getFeatures();
+  //   console.log()
+
+  //   for (var i = 0; i < attractionsPtVectorFeatures.length; i++) {
+  //     console.log("loop");
+  //     attractionsPtVectorObject[attractionsPtVectorFeatures[i].gid] = attractionsPtVectorFeatures[i];
+  //   }
+
+  // })
 
 
   function init() {
@@ -109,7 +141,8 @@ angular.module('starter.services', [])
         width: 10
       })
     });
-    var gesamtstreckenVector = createWFSLayer('gesamtstrecken_3857', gesamtstreckenStyle, ['strecke_nr%3D4020%20']);
+    gesamtstreckenVector = createWFSLayer('gesamtstrecken_pm', gesamtstreckenStyle, ['strecke_nr%3D4020%20']);
+    // gesamtstreckenVector = createWFSLayer('gesamtstrecken_3857', gesamtstreckenStyle);
 
     var attractionsStyle = new ol.style.Style({
       stroke: new ol.style.Stroke({
@@ -118,22 +151,46 @@ angular.module('starter.services', [])
       })
     });
     attractionsVector = createWFSLayer('attractions_attached_segments', attractionsStyle, ['strecke_nr%3D4020%20']);
+    // attractionsVector = createWFSLayer('attractions_attached_segments', attractionsStyle);
 
 
     var attractionsPtStyle = new ol.style.Style({
-         image: new ol.style.Circle({
-           radius: width * 2,
-           fill: new ol.style.Fill({
-             color: 'orange'
-           }),
-           stroke: new ol.style.Stroke({
-             color: white,
-             width: width / 2
-           })
+       image: new ol.style.Circle({
+         radius: width * 2,
+         fill: new ol.style.Fill({
+           color: 'orange'
          }),
-         zIndex: Infinity
-       });
-    var attractionsPtVector = createWFSLayer('attractions_point_pm', attractionsPtStyle);
+         stroke: new ol.style.Stroke({
+           color: white,
+           width: width / 2
+         })
+       }),
+       zIndex: Infinity
+     });   
+    var attractionsPtStyle2 = new ol.style.Style({
+       image: new ol.style.Circle({
+         radius: width * 2,
+         fill: new ol.style.Fill({
+           color: 'blue'
+         }),
+         stroke: new ol.style.Stroke({
+           color: white,
+           width: width / 2
+         })
+       }),
+       zIndex: Infinity
+     });
+
+    attractionsPtVector = createWFSLayer('attractions_point_pm', attractionsPtStyle2);
+
+    yellowDotsToRedLinesSource = new ol.source.Vector({
+
+    })
+
+    yellowDotsToRedLinesLayer = new ol.layer.Vector({
+      source: yellowDotsToRedLinesSource,
+      style: attractionsPtStyle
+    })
 
 
     // var saveStrategy = new OpenLayers.Strategy.Save();
@@ -170,7 +227,8 @@ angular.module('starter.services', [])
         currentPositionLayer,
         // coordinates,
         attractionsVector,
-        attractionsPtVector
+        attractionsPtVector,
+        yellowDotsToRedLinesLayer
         // wfs
       ],
       target: 'map',
@@ -182,12 +240,15 @@ angular.module('starter.services', [])
       // interactions: [],
       controls: [mouseControl],
       view: new ol.View({
-        center: ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'),
+        // center: ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'),
+        center: ol.proj.transform([8.45370788902995,49.026232005884], 'EPSG:4326', 'EPSG:3857'),
         zoom: 15
       })
     });
 
-    oldPosition = ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857');
+    attractionsPtVector.setOpacity(1);
+    // oldPosition = ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857');
+    oldPosition = ol.proj.transform([8.45370788902995,49.026232005884], 'EPSG:4326', 'EPSG:3857');
 
     window.coordinates = [];
 
@@ -251,9 +312,50 @@ angular.module('starter.services', [])
   function updatePosition(newCoordinates) {
     translateCurrentPosition(newCoordinates);
     console.log(attractionsVector.getSource().getFeatures());
+    console.log(gesamtstreckenVector.getSource().getFeatures());
+    console.log(attractionsPtVector.getSource().getFeatures());
+
+    findIntersectingAngles(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), attractionsVector.getSource().getFeatures());
 
     // TODO: calculate
   }
+
+  var pointCtrlObj = {};
+
+  function findIntersectingAngles(currentCoordinates, features) {
+    var intersecingFeatures = [];
+    var closestPointToLineString;
+    var distance;
+
+    for (var i = 0; i < features.length; i++) {
+      // console.log(features[i]);
+      closestPointToLineString = features[i].values_.geometry.getClosestPoint(currentCoordinates);
+      // console.log(closestPointToLineString + "  ---  " + currentCoordinates);
+      distance = Math.sqrt(Math.pow(currentCoordinates[0]-closestPointToLineString[0], 2) + Math.pow(currentCoordinates[1]-closestPointToLineString[1], 2));
+      // console.log(distance);
+      if (distance < 300) {
+        console.log("stop");
+        // $rootScope.$broadcast("GPSServicestop");
+        var p_id = features[i];
+        var pointFeatures = attractionsPtVector.getSource().getFeatures();
+        for (var j = 0; j < pointFeatures.length; j++) {
+          if (pointFeatures[j].values_.gid === p_id.values_.p_id) {
+            if (!pointCtrlObj[p_id.values_.p_id]) {
+              pointCtrlObj[p_id.values_.p_id] = true;
+            } else {
+              console.log("found");
+              yellowDotsToRedLinesSource.addFeature(pointFeatures[j]);
+            }
+          }
+        }
+
+        // console.log(attractionsPtVectorObject);
+        // console.log(attractionsPtVectorObject[p_id]);
+        // yellowDotsToRedLinesSource.addFeature(attractionsPtVectorObject[p_id]);
+      }
+    }
+  }
+
 
   return {
     init: init,

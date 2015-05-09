@@ -31,8 +31,16 @@ angular.module('starter.controllers', [])
 		})
 	}
 
+	var started = false;
+
 	$scope.start = function() {
-		GPSService.start();
+		if(started) {
+			GPSService.stop();
+		} else {
+			GPSService.start();
+		}
+		started = !started;
+
 	}
 
 })
