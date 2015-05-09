@@ -1,5 +1,38 @@
 angular.module('starter.controllers', [])
 
+// we dont define the ol3 map here, thats done in the MapService
+
+.controller('MapViewController', function($scope, MapService, CardService) {
+	console.log("MapViewController loaded");
+	MapService.init();
+
+	// $scope.infoCards = [
+	// 	{
+	// 		title: "title 1",
+	// 		description: "description example 1"
+	// 	},
+	// 	{
+	// 		title: "title 2",
+	// 		description: "description example 2"
+	// 	},
+	// 	{
+	// 		title: "title 3",
+	// 		description: "description example 3"
+	// 	}
+	// ];
+
+	$scope.infoCards = CardService.getCards;
+
+	$scope.addCard = function() {
+		console.log("addCard");
+		CardService.addCard({
+			title: "title " + $scope.infoCards.length,
+			description: "example description " + $scope.infoCards.length++
+		})
+	}
+
+})
+
 .controller('MainCtrl', function($scope, MapService, GPSService) {
 	$scope.startGPS = function() {
 		console.log("controller start");

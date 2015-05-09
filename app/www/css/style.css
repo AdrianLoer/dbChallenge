@@ -1,5 +1,54 @@
 /* Empty. Add your own CSS if you like */
 .map {
+	width: calc(100% - 30px);
+	position: absolute;
+	top: 60px;
+	left: 15px;
+	height: 50%;
+}
+
+.db-timeline {
+	width: 20000px;
+	height: 40px;
+	left: 100%;
+	top: 61%;
+	background-color: red;
+	position: absolute;
+}
+
+.db-timeline-element {
+	background-color: blue;
+	width: 40px;
+	height: 40px;
+	top: 0px;
+	position: relative;
+	float: left;
+}
+
+.infoslide {
+	height: 40%;
 	width: 100%;
+	position: absolute;
+	top: 61%;
+
+}
+
+.infoview {
+	position: absolute;
+	top: 60%;
+}
+
+.infoview-content {
+	width: 0;
 	height: 100%;
+}
+
+.infoview-element {
+	height: 100%;
+	width: 100%;
+	background-color: green;
+}
+
+.ol-mouse-position {
+	display: none;
 }

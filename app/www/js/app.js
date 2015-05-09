@@ -5,7 +5,7 @@
 // the 2nd parameter is an array of 'requires'
 // 'starter.services' is found in services.js
 // 'starter.controllers' is found in controllers.js
-angular.module('starter', ['ionic', 'starter.controllers', 'starter.services'])
+angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', 'directives'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -40,8 +40,18 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services'])
 
   .state('main', {
     url: '/main',
+    abstract: true,
     templateUrl: "templates/main.html",
-    controller: 'MainCtrl'
+  })
+
+  .state('main.map', {
+      url: "/map",
+      views: {
+        'mainView' :{
+          templateUrl: "templates/map.html",
+          controller: 'MapViewController'
+        }
+      }
   })
 
   .state('tab.dash', {
@@ -84,6 +94,6 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services'])
   });
 
   // if none of the above states are matched, use this as the fallback
-  $urlRouterProvider.otherwise('/main');
+  $urlRouterProvider.otherwise('/main/map');
 
 });

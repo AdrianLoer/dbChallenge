@@ -1,5 +1,18 @@
 angular.module('starter.services', [])
 
+.factory('CardService', function() {
+  var infoCards = [];
+
+  function addCard(card) {
+    infoCards.push(card);
+  }
+
+  return {
+    getCards: infoCards,
+    addCard: addCard
+  }
+})
+
 .factory('GPSService', function($http, MapService) {
 
   var gpsTrackData;
@@ -127,6 +140,7 @@ angular.module('starter.services', [])
           collapsible: false
         })
       }),
+      interactions: [],
       controls: [mouseControl],
       view: new ol.View({
         center: ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'),
