@@ -104,7 +104,8 @@ angular.module('starter.services', [])
 
 
     currentPositionLayer = new ol.layer.Vector({
-      source: currentPositionSource
+      source: currentPositionSource,
+      style: attractionsPtStyle
     })
 
 
@@ -115,7 +116,7 @@ angular.module('starter.services', [])
       source: pointSource
     })
 
-    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'), 100)));
+    // currentPositionSource.addFeature(new ol.Feature(new ol.geom.Point(ol.proj.transform([8.45793722305512,49.4816210554485], 'EPSG:4326', 'EPSG:3857'))));
     // vectorSource.addFeature(new ol.Feature(new ol.geom.Circle([5e6, 7e6], 1e6)));
 
     var mouseControl = new ol.control.MousePosition({
@@ -301,7 +302,7 @@ angular.module('starter.services', [])
     oldPosition = newCoordinates;
     currentPositionSource.clear();
 
-    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Circle(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'), 300)));
+    currentPositionSource.addFeature(new ol.Feature(new ol.geom.Point(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'))));
     map.getView().setCenter(ol.proj.transform(newCoordinates, 'EPSG:4326', 'EPSG:3857'));
   }
 
