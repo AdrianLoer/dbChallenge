@@ -62,7 +62,7 @@ angular.module('starter.services', [])
         projection: 'EPSG:4326'
     });
 
-        var white = [255, 255, 255, 1];
+    var white = [255, 255, 255, 1];
     var blue = [0, 153, 255, 1];
     var red = [255, 0, 0, 1];
     var width = 3;
@@ -143,6 +143,7 @@ angular.module('starter.services', [])
 
     var vectorSource = new ol.source.Vector({
       loader: function(extent, resolution, projection) {
+        console.log(extent);
         var url = 'http://192.168.0.2:8080/geoserver/db_hack/wfs?service=WFS&' +
             'version=1.0.0&request=GetFeature&typeName=db_hack:' + tableName + '&' +
             'outputFormat=text/javascript&format_options=callback:loadFeatures_' + tableName + '&' +
@@ -150,7 +151,7 @@ angular.module('starter.services', [])
             'srsname=EPSG:3857';
         $.ajax({url: url, dataType: 'jsonp', jsonp: false});
       },
-      strategy: ol.loadingstrategy.tile(new ol.tilegrid.XYZ({}))
+      strategy: ol.loadingstrategy.bbox
     });
 
     window['loadFeatures_' + tableName] = function(response) {
@@ -172,7 +173,7 @@ angular.module('starter.services', [])
     console.log(deltaY);
     var angle = Math.atan2(deltaY, deltaX);
     map.getView().setRotation(angle + Math.PI / 2);
-    console.log("angle " + angle * 180 / Math.PI); 
+    console.log("angle " + angle * 180 / Math.PI);
     // console.log(currentPositionSource.getFeatures());
     oldPosition = newCoordinates;
     currentPositionSource.clear();
